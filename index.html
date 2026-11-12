@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magic Game</title>
+  <!-- 外观设计都放在 style.css -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 状态提示：告诉玩家现在系统在做什么 -->
+  <div id="status">正在开启摄像头…<br><span class="en">Starting camera…</span></div>
+
+  <!-- 舞台：video 在下层，canvas 叠在上层，像透明投影片 -->
+  <div id="stage">
+    <!-- autoplay：自动播放；playsinline：手机上不会自动全屏 -->
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+    <!-- ✨ 特效专用的画布，叠在最上面 -->
+    <canvas id="fx"></canvas>
+    <!-- 施法结果的大字（不镜像，字才不会左右相反） -->
+    <div id="banner"></div>
+
+    <!-- 📝 录制时的检查面板：这一笔要保留还是丢掉？ -->
+    <div id="review">
+      <button id="keepStroke">✅ 保留 Keep <kbd>Enter</kbd></button>
+      <button id="discardStroke">❌ 丢掉 Discard <kbd>Backspace</kbd></button>
+    </div>
+  </div>
+
+  <!-- 📝 录制模板的工具列 -->
+  <div id="toolbar">
+    <span>📝 录制模板 Record:</span>
+    <button data-shape="triangle">△ 三角形 Triangle <span class="count">0</span></button>
+    <button data-shape="circle">○ 圆形 Circle <span class="count">0</span></button>
+    <button data-shape="lightning">⚡ 闪电 Lightning <span class="count">0</span></button>
+    <button id="stopRecord">⏹ 停止 Stop</button>
+    <button id="clearTemplates">🗑️ 清空 Clear</button>
+    <button id="saveTemplates">💾 储存 Save</button>
+    <span id="saveStatus"></span>
+  </div>
+
+  <!-- 测量面板：显示帧率、识别率、跟丢次数（开发用） -->
+  <div id="debug">📊 测量中… Measuring…</div>
+
+  <!-- type="module"：才能用 import 载入 MediaPipe -->
+  <script type="module" src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,489 @@
+body {
+  margin: 0;
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-family: sans-serif;
+}
+
+/* 状态提示文字：第一行中文，第二行英文 */
+#status {
+  color: #ddd;
+  margin-bottom: 12px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* 英文翻译：小一点、灰一点 */
+.en {
+  font-size: 13px;
+  color: #999;
+}
+
+/* 📝 录制模板的工具列 */
+#toolbar {
+  color: #ddd;
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+#toolbar button {
+  background: #2a2a2a;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+#toolbar button:hover {
+  background: #3a3a3a;
+}
+
+/* 正在录制的那个形状：亮红色边框 */
+#toolbar button.recording {
+  border-color: #ff5252;
+  background: #4a1f1f;
+}
+
+#toolbar .count {
+  color: #ffd54f;
+}
+
+/* 储存状态：有未储存的变更时是橘色，储存好是绿色 */
+#saveStatus.dirty {
+  color: #ffab40;
+}
+
+#saveStatus.clean {
+  color: #9f9;
+}
+
+/* 📖 咒语书：左下角的书（开关） */
+#spellBookBtn {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #f5e6c8;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+  transition: transform 0.15s;
+}
+
+#spellBookBtn:hover,
+#spellBookBtn.open {
+  transform: translateY(-3px) scale(1.06);
+}
+
+#spellBookBtn .book-label {
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  text-shadow: 0 1px 3px #000;
+}
+
+/* 施法成功：书发出那个魔法颜色的光 */
+#spellBookBtn.glow {
+  animation: bookGlow 1.5s ease-out;
+}
+
+@keyframes bookGlow {
+  0% {
+    filter: drop-shadow(0 0 22px var(--glow)) drop-shadow(0 0 8px var(--glow));
+  }
+  100% {
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+  }
+}
+
+/* 打开后的书本：左右两页，羊皮纸颜色，平时隐藏 */
+#spellBook {
+  position: absolute;
+  left: 16px;
+  bottom: 112px; /* 在左下角那本书的上方，不要盖住它 */
+  width: 580px;
+  height: 340px;
+  display: none;
+  border: 3px solid #6b3d1e;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  color: #4a3420;
+  font-size: 14px;
+  perspective: 1800px; /* 3D 翻页需要“透视”：离你越近的地方看起来越大 */
+  transform-origin: bottom left;
+}
+
+#spellBook.open {
+  display: flex;
+  animation: bookOpen 0.2s ease-out;
+}
+
+@keyframes bookOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.book-page {
+  position: relative;
+  width: 50%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 16px 18px;
+  background: #f3e7cc;
+}
+
+/* 中间的书脊：用渐层做出“往内凹”的阴影 */
+.side-left {
+  background: linear-gradient(to right, #f3e7cc 85%, #dccaa4);
+  border-right: 1px solid rgba(90, 55, 25, 0.4);
+}
+
+.side-right {
+  background: linear-gradient(to left, #f3e7cc 85%, #dccaa4);
+}
+
+.book-title {
+  font-size: 18px;
+  font-weight: bold;
+  height: 26px; /* 固定高度：左右两页的格子才会对齐 */
+  margin-bottom: 12px;
+}
+
+.book-en {
+  display: block;
+  font-size: 12px;
+  font-weight: normal;
+  color: #8a6a48;
+}
+
+.book-title .book-en,
+.book-en-inline {
+  display: inline;
+  font-size: 12px;
+  font-weight: normal;
+  color: #8a6a48;
+}
+
+/* 目录的格子：3 列 × 3 行，一格一个咒语 */
+.cell-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 76px;
+  gap: 10px;
+}
+
+.spell-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 2px solid rgba(107, 61, 30, 0.45);
+  border-radius: 8px;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.12s;
+}
+
+.spell-cell:hover {
+  background: rgba(255, 255, 255, 0.75);
+  transform: translateY(-2px);
+}
+
+.cell-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.cell-name {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.cell-en {
+  font-size: 11px;
+  color: #8a6a48;
+}
+
+/* 还没有咒语的位置：淡淡的虚线框 */
+.empty-slot {
+  border: 2px dashed rgba(107, 61, 30, 0.2);
+  border-radius: 8px;
+}
+
+.coming-note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  text-align: center;
+  font-size: 12px;
+  font-style: italic;
+  color: #8a6a48;
+}
+
+/* 施法成功时，目录那一格亮一下 */
+.spell-cell.lit {
+  animation: entryLit 1.5s ease-out;
+}
+
+@keyframes entryLit {
+  0% {
+    box-shadow: inset 0 0 0 100px var(--glow);
+  }
+  100% {
+    box-shadow: inset 0 0 0 100px transparent;
+  }
+}
+
+/* 详情页：左页 */
+.detail-title {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.detail-title-en {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.detail-shape {
+  margin-bottom: 10px;
+}
+
+.detail-desc {
+  margin: 6px 0;
+  line-height: 1.5;
+}
+
+.book-back {
+  position: absolute;
+  left: 18px;
+  bottom: 14px;
+  background: transparent;
+  border: 1px solid rgba(107, 61, 30, 0.6);
+  border-radius: 6px;
+  padding: 4px 12px;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.book-back:hover {
+  background: rgba(120, 80, 30, 0.12);
+}
+
+/* 详情页：右页 */
+.side-right:has(.book-demo) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.detail-howto {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.book-demo {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.detail-tip {
+  margin-bottom: 2px;
+}
+
+/* 📖 翻页：一张“纸”，以书脊为轴转 180 度 */
+.flip-sheet {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  transform-style: preserve-3d; /* 让正面、背面都留在 3D 空间里 */
+  z-index: 5;
+}
+
+/* 往前翻：纸盖在右页上，以左边（书脊）为轴，往左翻 */
+.flip-sheet.forward {
+  left: 50%;
+  transform-origin: left center;
+  animation: flipForward 0.6s ease-in-out forwards;
+}
+
+/* 往回翻：纸盖在左页上，以右边（书脊）为轴，往右翻 */
+.flip-sheet.backward {
+  left: 0;
+  transform-origin: right center;
+  animation: flipBackward 0.6s ease-in-out forwards;
+}
+
+@keyframes flipForward {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(-180deg);
+  }
+}
+
+@keyframes flipBackward {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+
+.flip-face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  backface-visibility: hidden; /* 转到背面时，正面就看不到 */
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+}
+
+.flip-back {
+  transform: rotateY(180deg); /* 背面一开始就是反过来的 */
+}
+
+/* 📝 检查面板：放在画面下方中间，平时隐藏 */
+#review {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  gap: 16px;
+}
+
+#review.show {
+  display: flex;
+}
+
+#review button {
+  font-size: 20px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+}
+
+#keepStroke {
+  background: #2e7d32;
+}
+
+#discardStroke {
+  background: #c62828;
+}
+
+#review kbd {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-left: 6px;
+}
+
+/* 测量面板（开发用） */
+#debug {
+  color: #9f9;
+  font-family: monospace;
+  margin-top: 12px;
+}
+
+/* 舞台：让 canvas 可以叠在 video 上面 */
+#stage {
+  position: relative;
+  max-width: 100%;
+}
+
+/* video 和 canvas 都镜像，两层才会对齐 */
+#video,
+#canvas,
+#fx {
+  transform: scaleX(-1);
+  border-radius: 8px;
+}
+
+#video {
+  display: block;
+  max-width: 100%;
+}
+
+/* 施法结果的大字：放在画面正中间，平时隐藏 */
+#banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-size: 40px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
+  pointer-events: none; /* 不挡住任何东西 */
+  opacity: 0;
+  transition: opacity 0.2s; /* 出现和消失都有 0.2 秒的淡入淡出 */
+}
+
+#banner small {
+  font-size: 20px;
+  font-weight: normal;
+}
+
+#banner.show {
+  opacity: 1;
+}
+
+#banner.cast {
+  color: #ffd54f;
+}
+
+#banner.fizzle {
+  color: #bbb;
+}
+
+#banner.record {
+  color: #ff8a80;
+}
+
+/* canvas 和 fx 都盖在 video 正上方，大小完全一样 */
+#canvas,
+#fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* hidden 属性：开发者模式关闭时，把工具列和测量面板藏起来
+   （#toolbar 设了 display: flex，会盖掉浏览器预设的 hidden，所以要再写一次） */
+[hidden] {
+  display: none !important;
+}
