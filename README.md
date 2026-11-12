@@ -3,7 +3,7 @@
 用手指在空中画出形状，就能施放魔法。
 Draw a shape in the air with your finger to cast a spell.
 
-**▶ 立即试玩 Play now:** https://kai369-hi.github.io/REPO_NAME/
+**▶ 立即试玩 Play now:** https://kai369-hi.github.io/Magic_Game/
 （需要电脑和摄像头 · Requires a computer with a webcam）
 
 ## 🎮 怎么玩 How to play
