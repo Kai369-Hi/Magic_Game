@@ -10,7 +10,8 @@
 //   spellBook.js         → 左下角的咒语书
 //
 // 🧪 不用画也能看特效：在 Console 输入 testSpell("triangle")、
-//    testSpell("circle")、testSpell("lightning") 或 testSpell("fizzle")（烟雾）
+//    testSpell("circle")、testSpell("lightning")、testSpell("star")、
+//    testSpell("spiral") 或 testSpell("fizzle")（烟雾）
 
 // 从 CDN 载入 MediaPipe（固定版本号，避免以后自动更新导致坏掉）
 import {
@@ -87,6 +88,8 @@ const SPELLS = {
   triangle: { shape: "△ 三角形", shapeEn: "Triangle", spell: "🔥 火焰弹", spellEn: "Fireball" },
   circle: { shape: "○ 圆形", shapeEn: "Circle", spell: "⭕ 光圈", spellEn: "Light Ring" },
   lightning: { shape: "⚡ 闪电", shapeEn: "Lightning", spell: "⚡ 闪电", spellEn: "Lightning" },
+  star: { shape: "★ 五角星", shapeEn: "Star", spell: "🌟 星光冲击", spellEn: "Star Rush" },
+  spiral: { shape: "🌀 螺旋", shapeEn: "Spiral", spell: "🌪️ 龙卷风", spellEn: "Tornado" },
 };
 
 // 📖 咒语书：左下角，点开可以看每个咒语怎么画（和咒语表用同一份资料）
@@ -206,6 +209,14 @@ document.addEventListener("keydown", (event) => {
 // ===== 🧰 工具列按钮 =====
 const toolbarEl = document.getElementById("toolbar");
 const saveStatusEl = document.getElementById("saveStatus");
+
+// 🆕 录制按钮由咒语表自动产生：之后加新咒语，不用再改 HTML
+for (const [key, s] of Object.entries(SPELLS)) {
+  const button = document.createElement("button");
+  button.dataset.shape = key;
+  button.innerHTML = `${s.shape} ${s.shapeEn} <span class="count">0</span>`;
+  toolbarEl.insertBefore(button, document.getElementById("stopRecord"));
+}
 
 for (const button of toolbarEl.querySelectorAll("button[data-shape]")) {
   button.addEventListener("click", () => {

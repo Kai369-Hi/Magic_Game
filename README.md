@@ -17,6 +17,8 @@ Draw a shape in the air with your finger to cast a spell.
 | △ 三角形 Triangle | 🔥 火焰弹 Fireball |
 | ○ 圆形 Circle | ⭕ 光圈 Light Ring |
 | ⚡ 闪电 Lightning | ⚡ 闪电 Lightning |
+| ★ 五角星 Star | 🌟 星光冲击 Star Rush |
+| 🌀 螺旋 Spiral | 🌪️ 龙卷风 Tornado |
 
 不知道怎么画？点左下角的 📖 咒语书。
 Not sure how to draw? Open the 📖 Spellbook in the bottom-left corner.

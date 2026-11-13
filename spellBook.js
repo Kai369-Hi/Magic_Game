@@ -33,6 +33,18 @@ const DEMO_PATHS = {
     [0.7, 0.52],
     [0.25, 0.95],
   ],
+  // 五角星：从最上面的尖角开始，每次跳过一个尖角连过去（0 → 2 → 4 → 1 → 3 → 0）
+  star: [0, 2, 4, 1, 3, 0].map((k) => {
+    const a = -Math.PI / 2 + (k * 2 * Math.PI) / 5;
+    return [0.5 + 0.46 * Math.cos(a), 0.53 + 0.46 * Math.sin(a)];
+  }),
+  // 螺旋：从中心开始，往外绕两圈
+  spiral: Array.from({ length: 61 }, (_, i) => {
+    const t = i / 60;
+    const a = 4 * Math.PI * t;
+    const r = 0.04 + 0.42 * t;
+    return [0.5 + r * Math.cos(a), 0.5 + r * Math.sin(a)];
+  }),
 };
 
 // 每个咒语的详细资料
@@ -62,6 +74,22 @@ const DETAILS = {
     descriptionEn: "Calls a bolt of lightning from your fingertip into the sky, with a flash and a shake.",
     tip: "从右上开始，往下折三段",
     tipEn: "Start at the top right and zigzag down in three strokes",
+  },
+  star: {
+    ink: "#b8860b",
+    glow: "rgba(255, 235, 59, 0.9)",
+    description: "从你画的星星里喷出一大群闪亮的星星，高速冲向前方。",
+    descriptionEn: "Unleashes a swarm of shining stars that rush forward at high speed.",
+    tip: "从上面的尖角开始，一笔连成五角星",
+    tipEn: "Start at the top point and connect all five points in one stroke",
+  },
+  spiral: {
+    ink: "#1565c0",
+    glow: "rgba(80, 170, 255, 0.9)",
+    description: "召唤一道闪着雷光的蓝色龙卷风，把周围的碎石卷上天空。",
+    descriptionEn: "Summons a crackling blue tornado that hurls debris into the sky.",
+    tip: "从中心开始，往外绕两圈",
+    tipEn: "Start in the middle and spiral outward about two turns",
   },
 };
 

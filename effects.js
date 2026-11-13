@@ -44,6 +44,8 @@ export class EffectManager {
     if (shape === "triangle") this.effects.push(new FireEffect(common));
     else if (shape === "circle") this.effects.push(new LightEffect(common));
     else if (shape === "lightning") this.effects.push(new LightningEffect(common));
+    else if (shape === "star") this.effects.push(new StarRushEffect(common)); // 🌟 星光冲击
+    else if (shape === "spiral") this.effects.push(new TornadoEffect(common)); // 🌪️ 龙卷风
     else if (shape === "fizzle") this.effects.push(new SmokeEffect(common)); // 💨 施法失败
   }
 
@@ -555,6 +557,380 @@ class SmokeEffect {
     }
     ctx.restore();
   }
+}
+
+// =====================================================================
+// 🌟 星光冲击：大量亮黄色的星星从你画的位置喷出，高速冲向镜头
+//    “冲向镜头” = 越飞越快、越飞越大、往四周散开（像开车时迎面而来的雨滴）
+// =====================================================================
+class StarRushEffect {
+  constructor({ bounds, canvas, shake }) {
+    this.origin = { x: bounds.centerX, y: bounds.centerY };
+    this.scale = clamp(bounds.size / 200, 0.6, 2);
+    this.reach = Math.hypot(canvas.width, canvas.height) * 0.55; // 星星最远飞多远（飞出画面）
+    this.age = 0;
+    this.emitTime = 0.8; // 前 0.8 秒持续喷出星星
+    this.stars = [];
+    this.spawnCarry = 0;
+    this.shake = shake;
+    shake(5, 0.6); // 连续的轻微震动：一大群东西冲过来的感觉
+  }
+
+  get done() {
+    return this.age > this.emitTime && this.stars.length === 0;
+  }
+
+  spawnStar() {
+    const angle = rand(0, Math.PI * 2); // 往四面八方
+    this.stars.push({
+      angle,
+      offset: rand(0, 25) * this.scale, // 出发点稍微散开
+      life: rand(0.45, 0.7), // 多久冲出画面（越短越快）
+      age: 0,
+      r: rand(5, 9) * this.scale, // 最小时的大小
+      spin: rand(-10, 10),
+      tilt: rand(0, Math.PI * 2),
+    });
+  }
+
+  // 星星现在在哪里、多大：t = 0（刚出发）到 1（冲出画面）
+  //   距离用 t³：一开始慢、越来越快 → 迎面冲来的速度感
+  //   大小用 1 + 5t²：越靠近镜头越大
+  starState(s, t) {
+    const dist = s.offset + this.reach * t * t * t;
+    return {
+      x: this.origin.x + Math.cos(s.angle) * dist,
+      y: this.origin.y + Math.sin(s.angle) * dist,
+      r: s.r * (1 + 5 * t * t),
+    };
+  }
+
+  update(dt) {
+    this.age += dt;
+    if (this.age < this.emitTime) {
+      this.spawnCarry += dt * 90; // 每秒喷出约 90 颗
+      while (this.spawnCarry >= 1) {
+        this.spawnStar();
+        this.spawnCarry--;
+      }
+    }
+    for (const s of this.stars) s.age += dt;
+    this.stars = this.stars.filter((s) => s.age < s.life);
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+
+    // 中心的光：喷发的源头一直亮着
+    if (this.age < this.emitTime + 0.2) {
+      const fade = this.age < this.emitTime ? 1 : 1 - (this.age - this.emitTime) / 0.2;
+      const R = 60 * this.scale;
+      const g = ctx.createRadialGradient(this.origin.x, this.origin.y, 0, this.origin.x, this.origin.y, R);
+      g.addColorStop(0, `rgba(255, 255, 220, ${0.9 * fade})`);
+      g.addColorStop(0.4, `rgba(255, 230, 60, ${0.5 * fade})`);
+      g.addColorStop(1, "rgba(255, 200, 0, 0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(this.origin.x, this.origin.y, R, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (const s of this.stars) {
+      const t = s.age / s.life;
+      const now = this.starState(s, t);
+      const before = this.starState(s, Math.max(0, t - 0.12));
+
+      // ① 速度线：从“刚才的位置”拉到“现在的位置”，越快越长
+      //    用渐层：靠近星星那头是亮黄白色，尾巴慢慢变透明
+      const trail = ctx.createLinearGradient(before.x, before.y, now.x, now.y);
+      trail.addColorStop(0, "rgba(255, 230, 80, 0)");
+      trail.addColorStop(1, "rgba(255, 245, 160, 0.9)");
+      ctx.strokeStyle = trail;
+      ctx.lineWidth = now.r * 0.7;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(before.x, before.y);
+      ctx.lineTo(now.x, now.y);
+      ctx.stroke();
+
+      // ② 星星本体：三层叠起来 → 外层光晕（大、淡）、亮黄色本体、接近白色的中心
+      //    （不用 shadowBlur：它很耗效能，几十颗星星一起用会卡）
+      const angle = s.tilt + s.spin * s.age;
+      ctx.fillStyle = "rgba(255, 220, 40, 0.35)";
+      drawStarShape(ctx, now.x, now.y, now.r * 1.7, angle);
+      ctx.fillStyle = "rgba(255, 235, 59, 1)";
+      drawStarShape(ctx, now.x, now.y, now.r, angle);
+      ctx.fillStyle = "rgba(255, 255, 220, 0.9)";
+      drawStarShape(ctx, now.x, now.y, now.r * 0.5, angle);
+    }
+    ctx.restore();
+  }
+}
+
+// 画一颗五角星：外圈 5 个尖角、内圈 5 个凹角，交替连起来
+function drawStarShape(ctx, x, y, r, angle) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const radius = i % 2 === 0 ? r : r * 0.45;
+    const a = angle - Math.PI / 2 + (i * Math.PI) / 5;
+    ctx.lineTo(x + Math.cos(a) * radius, y + Math.sin(a) * radius);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+// =====================================================================
+// 🌪️ 龙卷风：上宽下窄的发光漏斗，一圈圈霓虹蓝的光带螺旋往上转，
+//    里面有闪电劈来劈去，碎石被卷起来绕着飞，底部发出白蓝色的光
+//
+//    “假 3D”：
+//      - 圆圈压扁成椭圆 → 像从侧面看
+//      - 转到后半圈的东西比较淡，前半圈的比较亮
+// =====================================================================
+class TornadoEffect {
+  constructor({ bounds, canvas, shake }) {
+    this.homeX = bounds.centerX; // 出发的位置（左右来回移动的中心）
+    this.baseY = Math.min(canvas.height - 20, bounds.centerY + bounds.size * 0.6); // 漏斗底部
+    this.height = clamp(bounds.size * 2.6, 260, canvas.height * 0.9);
+    this.topRadius = clamp(bounds.size * 0.8, 90, 280); // 顶部有多宽
+    this.age = 0;
+    this.duration = 4.0;
+    shake(4, 3.6); // 持续的低沉震动
+
+    // ↔️ 左右来回移动：最多移动画面宽度的 22%，但离边缘近的话就移少一点，不要跑出画面
+    const margin = this.topRadius * 0.5;
+    this.travel = Math.max(60, Math.min(canvas.width * 0.22, this.homeX - margin, canvas.width - this.homeX - margin));
+    this.travelSpeed = 2.4; // 来回的速度（越大越快）
+
+    // 光带：22 条螺旋，每条的起始角度、粗细、亮度都不一样
+    this.bands = Array.from({ length: 22 }, () => ({
+      phase: rand(0, Math.PI * 2),
+      twist: rand(5, 8), // 从下到上绕几弧度（越大绕越多圈）
+      speed: rand(5, 8), // 转多快
+      width: rand(0.6, 1.4),
+      hue: rand(195, 215), // 蓝色到青蓝色
+      light: rand(55, 75),
+    }));
+
+    // 碎石：绕着漏斗外面飞
+    this.debris = Array.from({ length: 36 }, () => this.newDebris(rand(0, 1)));
+    this.bolts = []; // 漏斗里的闪电
+    this.nextBolt = 0;
+  }
+
+  newDebris(h) {
+    return {
+      h,
+      theta: rand(0, Math.PI * 2),
+      spin: rand(3, 6),
+      rise: rand(0.15, 0.3),
+      out: rand(1.15, 1.6), // 离漏斗多远（比漏斗半径大一点）
+      size: rand(3, 8),
+      rot: rand(0, Math.PI * 2),
+    };
+  }
+
+  get done() {
+    return this.age >= this.duration;
+  }
+
+  // 整体强度：0.5 秒内长出来，最后 0.6 秒消失
+  get strength() {
+    if (this.age < 0.5) return this.age / 0.5;
+    if (this.age > this.duration - 0.6) return Math.max(0, (this.duration - this.age) / 0.6);
+    return 1;
+  }
+
+  // ↔️ 漏斗现在的中心位置：用 sin 波来回摆动（像钟摆）
+  get cx() {
+    return this.homeX + this.travel * Math.sin(this.age * this.travelSpeed);
+  }
+
+  // 现在往哪边移、移多快（sin 的变化率就是 cos）：正数 = 往右，负数 = 往左
+  get velocity() {
+    return this.travel * this.travelSpeed * Math.cos(this.age * this.travelSpeed);
+  }
+
+  radiusAt(h) {
+    return this.topRadius * (0.1 + 0.9 * Math.pow(h, 1.3)); // 底部很尖、往上张开
+  }
+
+  swayAt(h) {
+    const wobble = Math.sin(this.age * 2.2 + h * 2) * 22 * h; // 自己的扭动，越上面摆越多
+    const lean = -this.velocity * 0.12 * h; // 🌪️ 移动时上半部落后 → 往反方向倾斜
+    return wobble + lean;
+  }
+
+  // 漏斗表面上的一点（h = 高度 0 到 1，theta = 绕着的角度）
+  point(h, theta, out = 1) {
+    const r = this.radiusAt(h) * out;
+    return {
+      x: this.cx + this.swayAt(h) + r * Math.cos(theta),
+      y: this.baseY - h * this.height + r * 0.22 * Math.sin(theta),
+      front: (Math.sin(theta) + 1) / 2, // 0 = 后面，1 = 前面
+    };
+  }
+
+  update(dt) {
+    this.age += dt;
+
+    for (const d of this.debris) {
+      d.theta += d.spin * dt;
+      d.h += d.rise * dt;
+      d.rot += 4 * dt;
+      if (d.h > 1.05) Object.assign(d, this.newDebris(0)); // 飞到顶了，从底部重新来
+    }
+
+    // 每 0.12 秒换一次闪电的形状
+    if (this.age >= this.nextBolt) {
+      this.nextBolt = this.age + 0.12;
+      this.bolts = Array.from({ length: 2 }, () => {
+        const h1 = rand(0.15, 0.7);
+        const a = this.point(h1, rand(0, Math.PI * 2), 0.7);
+        const b = this.point(h1 + rand(0.15, 0.3), rand(0, Math.PI * 2), 0.7);
+        return jagged(a, b, Math.hypot(b.x - a.x, b.y - a.y) * 0.25);
+      });
+    }
+  }
+
+  draw(ctx) {
+    const s = this.strength;
+    if (s <= 0) return;
+    const grow = easeOutCubic(Math.min(1, this.age / 0.5)); // 从底部往上长出来
+    const topH = grow; // 现在长到多高
+
+    ctx.save();
+
+    // ① 碎石（后半圈）：先画，才会被光带盖住
+    this.drawDebris(ctx, s, topH, false);
+
+    ctx.globalCompositeOperation = "lighter";
+
+    // ② 漏斗中心的光柱：沿着中轴，一团团青蓝色的光
+    for (let h = 0.05; h <= topH; h += 0.12) {
+      const p = this.point(h, 0, 0);
+      const R = this.radiusAt(h) * 0.9;
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, R);
+      g.addColorStop(0, `rgba(160, 230, 255, ${0.16 * s})`);
+      g.addColorStop(1, "rgba(40, 120, 255, 0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, R, R * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ③ 漏斗的身体：用左右两边的轮廓围成一个形状，填上半透明的蓝色 → 有“体积”
+    ctx.fillStyle = `rgba(30, 110, 255, ${0.16 * s})`;
+    ctx.beginPath();
+    for (let h = 0; h <= topH; h += 0.05) {
+      const c = this.point(h, 0, 0);
+      ctx.lineTo(c.x - this.radiusAt(h), c.y);
+    }
+    for (let h = topH; h >= 0; h -= 0.05) {
+      const c = this.point(h, 0, 0);
+      ctx.lineTo(c.x + this.radiusAt(h), c.y);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // ④ 螺旋光带：每条都是从底部绕到顶部的螺旋线
+    //    画两次：先把整条画成暗蓝色（后半圈的样子），
+    //    再把“在前半圈的那几段”用亮白蓝色重画一次
+    //    （每一段连成一条完整的线来画，才不会像一颗颗珠子）
+    const SEGMENTS = 40;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "butt";
+    for (const band of this.bands) {
+      const pts = [];
+      for (let i = 0; i <= SEGMENTS; i++) {
+        const h = (i / SEGMENTS) * topH;
+        const theta = band.phase + band.twist * h + band.speed * this.age;
+        pts.push({ ...this.point(h, theta), h });
+      }
+      const width = (3 + 14 * topH) * band.width;
+
+      // 第一次：整条，暗蓝色
+      ctx.strokeStyle = `hsla(${band.hue}, 100%, ${band.light - 15}%, ${0.14 * s})`;
+      ctx.lineWidth = width;
+      strokeRun(ctx, pts, 0, pts.length - 1);
+
+      // 第二次：只画前半圈的段落，亮白蓝色
+      ctx.strokeStyle = `hsla(${band.hue}, 100%, ${band.light + 18}%, ${0.42 * s})`;
+      ctx.lineWidth = width * 0.8;
+      let runStart = -1;
+      for (let i = 0; i < pts.length; i++) {
+        const inFront = pts[i].front > 0.5;
+        if (inFront && runStart < 0) runStart = i;
+        if ((!inFront || i === pts.length - 1) && runStart >= 0) {
+          strokeRun(ctx, pts, Math.max(0, runStart - 1), i);
+          runStart = -1;
+        }
+      }
+    }
+
+    // ⑤ 闪电：在漏斗里面劈来劈去（外层蓝紫光晕 + 白色核心）
+    ctx.lineJoin = "round";
+    for (const bolt of this.bolts) {
+      for (const [w, color] of [
+        [8, `rgba(170, 140, 255, ${0.35 * s})`],
+        [2.5, `rgba(255, 255, 255, ${0.95 * s})`],
+      ]) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = w;
+        ctx.beginPath();
+        ctx.moveTo(bolt[0].x, bolt[0].y);
+        for (const p of bolt) ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      }
+    }
+
+    // ⑥ 底部的光：白蓝色，像能量打在地上
+    const base = ctx.createRadialGradient(this.cx, this.baseY, 0, this.cx, this.baseY, this.topRadius * 0.7);
+    base.addColorStop(0, `rgba(230, 250, 255, ${0.8 * s})`);
+    base.addColorStop(0.3, `rgba(90, 190, 255, ${0.45 * s})`);
+    base.addColorStop(1, "rgba(30, 90, 255, 0)");
+    ctx.fillStyle = base;
+    ctx.beginPath();
+    ctx.ellipse(this.cx, this.baseY, this.topRadius * 0.7, this.topRadius * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalCompositeOperation = "source-over";
+
+    // ⑦ 碎石（前半圈）：最后画，盖在光带前面
+    this.drawDebris(ctx, s, topH, true);
+
+    ctx.restore();
+  }
+
+  drawDebris(ctx, s, topH, front) {
+    for (const d of this.debris) {
+      if (d.h > topH) continue;
+      const p = this.point(d.h, d.theta, d.out);
+      if ((p.front > 0.5) !== front) continue; // 只画这一半的
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(d.rot);
+      ctx.fillStyle = `rgba(20, 30, 55, ${0.85 * s})`;
+      ctx.beginPath(); // 不规则的四边形 = 碎石
+      ctx.moveTo(-d.size, -d.size * 0.4);
+      ctx.lineTo(d.size * 0.3, -d.size * 0.7);
+      ctx.lineTo(d.size, d.size * 0.3);
+      ctx.lineTo(-d.size * 0.4, d.size * 0.6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+// 把 pts[from] 到 pts[to] 连成一条完整的线画出来
+function strokeRun(ctx, pts, from, to) {
+  if (to <= from) return;
+  ctx.beginPath();
+  ctx.moveTo(pts[from].x, pts[from].y);
+  for (let i = from + 1; i <= to; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
 }
 
 // 锯齿线：中点位移法 (Midpoint Displacement)
