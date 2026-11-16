@@ -19,6 +19,10 @@ Draw a shape in the air with your finger to cast a spell.
 | ⚡ 闪电 Lightning | ⚡ 闪电 Lightning |
 | ★ 五角星 Star | 🌟 星光冲击 Star Rush |
 | 🌀 螺旋 Spiral | 🌪️ 龙卷风 Tornado |
+| ~ 波浪 Wave | 🐉 水龙 Water Dragon |
+| M 字 M Shape | ⛰️ 落石 Rockfall |
+| ∞ 无限 Infinity | ❄️ 冰冻 Freeze |
+| ℓ 小圈尾巴 Loop | 🦋 蝴蝶 Butterflies |
 
 不知道怎么画？点左下角的 📖 咒语书。
 Not sure how to draw? Open the 📖 Spellbook in the bottom-left corner.

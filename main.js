@@ -11,7 +11,8 @@
 //
 // 🧪 不用画也能看特效：在 Console 输入 testSpell("triangle")、
 //    testSpell("circle")、testSpell("lightning")、testSpell("star")、
-//    testSpell("spiral") 或 testSpell("fizzle")（烟雾）
+//    testSpell("spiral")、testSpell("wave")、testSpell("mshape")、
+//    testSpell("infinity")、testSpell("loop") 或 testSpell("fizzle")（烟雾）
 
 // 从 CDN 载入 MediaPipe（固定版本号，避免以后自动更新导致坏掉）
 import {
@@ -90,6 +91,10 @@ const SPELLS = {
   lightning: { shape: "⚡ 闪电", shapeEn: "Lightning", spell: "⚡ 闪电", spellEn: "Lightning" },
   star: { shape: "★ 五角星", shapeEn: "Star", spell: "🌟 星光冲击", spellEn: "Star Rush" },
   spiral: { shape: "🌀 螺旋", shapeEn: "Spiral", spell: "🌪️ 龙卷风", spellEn: "Tornado" },
+  wave: { shape: "~ 波浪", shapeEn: "Wave", spell: "🐉 水龙", spellEn: "Water Dragon" },
+  mshape: { shape: "M 字", shapeEn: "M Shape", spell: "⛰️ 落石", spellEn: "Rockfall" },
+  infinity: { shape: "∞ 无限", shapeEn: "Infinity", spell: "❄️ 冰冻", spellEn: "Freeze" },
+  loop: { shape: "ℓ 小圈尾巴", shapeEn: "Loop", spell: "🦋 蝴蝶", spellEn: "Butterflies" },
 };
 
 // 📖 咒语书：左下角，点开可以看每个咒语怎么画（和咒语表用同一份资料）

@@ -45,6 +45,31 @@ const DEMO_PATHS = {
     const r = 0.04 + 0.42 * t;
     return [0.5 + r * Math.cos(a), 0.5 + r * Math.sin(a)];
   }),
+  // 波浪：从左边开始，上下起伏两次
+  wave: Array.from({ length: 41 }, (_, i) => {
+    const t = i / 40;
+    return [0.06 + 0.88 * t, 0.5 - 0.22 * Math.sin(4 * Math.PI * t)];
+  }),
+  // M 字：从左下开始，上 → 下 → 上 → 下
+  mshape: [
+    [0.1, 0.9],
+    [0.28, 0.1],
+    [0.5, 0.62],
+    [0.72, 0.1],
+    [0.9, 0.9],
+  ],
+  // ∞ 无限：从中间开始，先往右上画右边的圈，穿过中间，再画左边的圈回到中间
+  infinity: Array.from({ length: 61 }, (_, i) => {
+    const t = Math.PI / 2 - (i / 60) * Math.PI * 2;
+    const d = 1 + Math.sin(t) ** 2;
+    return [0.5 + (0.44 * Math.cos(t)) / d, 0.5 - (0.6 * Math.sin(t) * Math.cos(t)) / d];
+  }),
+  // ℓ 小圈尾巴：从左下开始往右上斜上去，在上面绕一个小圈，再直直往下，最后往右勾一个尾巴
+  loop: [
+    [0.2, 0.86], [0.35, 0.72], [0.5, 0.54], [0.62, 0.36], [0.69, 0.2], [0.67, 0.09],
+    [0.58, 0.04], [0.49, 0.07], [0.43, 0.18], [0.42, 0.34], [0.44, 0.52], [0.47, 0.7],
+    [0.53, 0.84], [0.63, 0.9], [0.77, 0.85],
+  ],
 };
 
 // 每个咒语的详细资料
@@ -90,6 +115,38 @@ const DETAILS = {
     descriptionEn: "Summons a crackling blue tornado that hurls debris into the sky.",
     tip: "从中心开始，往外绕两圈",
     tipEn: "Start in the middle and spiral outward about two turns",
+  },
+  wave: {
+    ink: "#0277bd",
+    glow: "rgba(80, 200, 255, 0.9)",
+    description: "从黑夜中召唤一股汹涌的水流，螺旋盘旋，最后化作一条咆哮的水龙。",
+    descriptionEn: "Summons a surging torrent from the darkness that spirals and transforms into a roaring water dragon.",
+    tip: "从左边开始，上下起伏画出两个波",
+    tipEn: "Start on the left and draw two ups and downs",
+  },
+  mshape: {
+    ink: "#6d4c41",
+    glow: "rgba(210, 170, 120, 0.9)",
+    description: "引发一场山崩，一大群巨石从天而降，砸在你画的位置。",
+    descriptionEn: "Triggers a landslide: a hail of boulders crashes down onto the spot you drew.",
+    tip: "从左下开始，往上、往下、往上、往下，一笔画出 M",
+    tipEn: "Start at the bottom left: up, down, up, down in one stroke",
+  },
+  infinity: {
+    ink: "#0097a7",
+    glow: "rgba(160, 235, 255, 0.9)",
+    description: "释放刺骨的寒气，羽毛般的冰花从四周不断生长、往中心蔓延，冰尘在空气中闪烁飞舞。",
+    descriptionEn: "Unleashes bitter cold: feathery frost grows in from every edge while glittering ice dust swirls.",
+    tip: "从中间开始，先画右边的圈，穿过中间再画左边的圈",
+    tipEn: "Start in the middle: loop the right side, cross the middle, then loop the left side",
+  },
+  loop: {
+    ink: "#8e24aa",
+    glow: "rgba(230, 140, 255, 0.9)",
+    description: "夜晚的庭院里，一群凤蝶在淡紫色的丝带烟雾之间飞舞，金色鳞粉随风飘散。",
+    descriptionEn: "In a night garden, swallowtails dance between lilac ribbons of mist as golden dust drifts upward.",
+    tip: "从左下往右上斜上去，在顶端绕一个小圈，再往下勾个尾巴",
+    tipEn: "Go up to the right, make a small loop at the top, then come down and flick a tail",
   },
 };
 
