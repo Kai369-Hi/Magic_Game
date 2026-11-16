@@ -44,6 +44,15 @@ body {
   cursor: pointer;
 }
 
+#toolbar #adminLink {
+  color: #ffd54f;
+  border: 1px solid #8a7330;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 15px;
+  text-decoration: none;
+}
+
 #toolbar button:hover {
   background: #3a3a3a;
 }
@@ -486,4 +495,419 @@ body {
    （#toolbar 设了 display: flex，会盖掉浏览器预设的 hidden，所以要再写一次） */
 [hidden] {
   display: none !important;
+}
+
+/* =====================================================================
+   🤝 贡献模式
+   ===================================================================== */
+
+/* 右下角的按钮（跟左下角的咒语书同一种风格） */
+#contributeBtn {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #f5e6c8;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+  transition: transform 0.15s;
+}
+
+#contributeBtn:hover,
+#contributeBtn.open {
+  transform: translateY(-3px) scale(1.06);
+}
+
+#contributeBtn .contrib-icon {
+  font-size: 44px;
+  line-height: 1.2;
+}
+
+/* 贡献模式中：把咒语书和这个按钮藏起来（面板上有 ✕ 可以离开），画面比较干净 */
+#stage.contributing #spellBookBtn,
+#stage.contributing #spellBook,
+#stage.contributing #contributeBtn {
+  display: none;
+}
+
+/* 中英双语的文字：英文在下一行，小一点、灰一点 */
+.bi .en,
+#contribPanel h3 .en,
+#contribPanel .title .en,
+.consent-card h2 .en {
+  display: block;
+  font-size: 12px;
+  font-weight: normal;
+  color: #9aa3b5;
+  margin-top: 2px;
+}
+
+/* 右边的教学面板 */
+#contribPanel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 320px;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 14px 16px 16px;
+  background: rgba(18, 20, 32, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  color: #e8eaf2;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+#contribPanel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+#contribPanel .title {
+  font-size: 17px;
+  font-weight: bold;
+}
+
+#contribPanel .close {
+  background: none;
+  border: none;
+  color: #bbb;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+#contribPanel .close:hover {
+  color: #fff;
+}
+
+/* 步骤条：① ② ③ … 做完的打勾，现在这一步亮起来 */
+#contribPanel .steps {
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 10px;
+}
+
+#contribPanel .steps li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  font-size: 11px;
+  color: #7d8597;
+  text-align: center;
+}
+
+#contribPanel .steps .en {
+  display: block;
+  font-size: 10px;
+}
+
+#contribPanel .steps .dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #555c6e;
+  margin-bottom: 3px;
+  font-size: 12px;
+}
+
+#contribPanel .steps li.done .dot {
+  background: #2e7d32;
+  border-color: #2e7d32;
+  color: #fff;
+}
+
+#contribPanel .steps li.now {
+  color: #ffd54f;
+}
+
+#contribPanel .steps li.now .dot {
+  border-color: #ffd54f;
+  box-shadow: 0 0 8px rgba(255, 213, 79, 0.6);
+}
+
+#contribPanel h3 {
+  font-size: 16px;
+  margin: 6px 0 10px;
+}
+
+#contribPanel .body > .bi {
+  margin-bottom: 10px;
+}
+
+#contribPanel .hint {
+  color: #b9c0cf;
+  font-size: 13px;
+}
+
+#contribPanel .warn {
+  color: #ffab40;
+}
+
+#contribPanel .good {
+  color: #9be59f;
+}
+
+#contribPanel .tip {
+  font-weight: bold;
+}
+
+/* 第 ① 步：大大的手指，看到了就变绿 */
+.pose-icon {
+  font-size: 64px;
+  text-align: center;
+  margin: 4px 0 8px;
+  opacity: 0.6;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.pose-icon.ok {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.pose-check {
+  text-align: center;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  margin-top: 10px;
+}
+
+.pose-check.ok {
+  background: rgba(46, 125, 50, 0.35);
+  color: #c8f5ca;
+}
+
+/* 第 ② 步：9 张形状卡片 */
+.shape-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.shape-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 8px 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.12s;
+}
+
+.shape-card:hover:not(:disabled) {
+  background: rgba(255, 213, 79, 0.15);
+  transform: translateY(-2px);
+}
+
+.shape-card .sym {
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.shape-card .nm {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.shape-card .en {
+  font-size: 10px;
+  color: #9aa3b5;
+}
+
+.shape-card .cnt {
+  font-size: 11px;
+  color: #ffd54f;
+  margin-top: 2px;
+}
+
+.shape-card.full {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.shape-card.full .cnt {
+  color: #9be59f;
+}
+
+/* 第 ③、④ 步：示范动画（纸的颜色，跟咒语书一样） */
+canvas.contrib-demo {
+  display: block;
+  margin: 4px auto 10px;
+  background: #f3e7cc;
+  border-radius: 8px;
+}
+
+#contribPanel ol.howto {
+  padding-left: 20px;
+  margin: 0 0 10px;
+}
+
+#contribPanel ol.howto li {
+  margin-bottom: 6px;
+}
+
+/* 第 ⑤ 步：示范 vs 你画的 */
+.compare {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+}
+
+.compare figure {
+  margin: 0;
+  text-align: center;
+}
+
+.compare canvas.thumb {
+  background: #f3e7cc;
+  border-radius: 8px;
+}
+
+.compare figcaption {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.verdict {
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.verdict.good {
+  background: rgba(46, 125, 50, 0.3);
+  color: #d6f7d8;
+}
+
+.verdict.mid {
+  background: rgba(255, 193, 7, 0.18);
+  color: #ffe9a8;
+}
+
+.verdict.bad {
+  background: rgba(244, 67, 54, 0.22);
+  color: #ffd0cb;
+}
+
+/* 第 ⑥ 步：大大的结果图示 */
+.big-state {
+  font-size: 48px;
+  text-align: center;
+  margin: 6px 0;
+}
+
+/* 面板里的按钮 */
+#contribPanel .contrib-actions,
+#contribConsent .contrib-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.contrib-actions button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1.25;
+}
+
+.contrib-actions button .bi .en {
+  color: inherit;
+  opacity: 0.75;
+  font-size: 11px;
+}
+
+.contrib-actions .primary {
+  background: #ffd54f;
+  color: #2a2000;
+  border: none;
+  font-weight: bold;
+}
+
+.contrib-actions .primary:hover {
+  background: #ffe082;
+}
+
+.contrib-actions .ghost {
+  background: transparent;
+  color: #e8eaf2;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.contrib-actions .ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.contrib-actions kbd {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+/* ⓪ 同意书：盖在画面中间 */
+#contribConsent {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.consent-card {
+  width: min(480px, 90%);
+  max-height: 90%;
+  overflow-y: auto;
+  padding: 20px 22px;
+  background: #1b1e2e;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #e8eaf2;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.consent-card h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.consent-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+
+.consent-card li {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
 }

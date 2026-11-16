@@ -235,6 +235,16 @@ export class SpellStateMachine {
     }
   }
 
+  // 🔄 一切归零，回到 IDLE（进入 / 离开贡献模式时用，不会通知外面）
+  reset() {
+    this.clearStroke();
+    this.result = null;
+    this.notPointingFrames = 0;
+    this.missedFrames = 0;
+    this.anchor = null;
+    this.state = State.IDLE;
+  }
+
   clearStroke() {
     this.stroke = [];
     this.pathLength = 0;

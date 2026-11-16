@@ -15,7 +15,7 @@
 
 // 示范用的路径（0 到 1 的比例座标，左上角是 (0, 0)）
 // 画法参考你录的模板：三角形从顶点开始、闪电从右上开始往下折 3 段
-const DEMO_PATHS = {
+export const DEMO_PATHS = {
   triangle: [
     [0.5, 0.08],
     [0.08, 0.9],
@@ -75,7 +75,7 @@ const DEMO_PATHS = {
 // 每个咒语的详细资料
 //   ink  = 书页上示范线条的颜色（纸是浅色的，所以用深一点的颜色）
 //   glow = 施法成功时，书发光的颜色
-const DETAILS = {
+export const DETAILS = {
   triangle: {
     ink: "#d84315",
     glow: "rgba(255, 140, 40, 0.9)",
@@ -158,9 +158,9 @@ const CELLS_PER_PAGE = GRID_COLUMNS * GRID_ROWS; // 每页几格
 const DRAW_TIME = 1.2;
 const HOLD_TIME = 0.6;
 const FADE_TIME = 0.3;
-const CYCLE = DRAW_TIME + HOLD_TIME + FADE_TIME;
+export const CYCLE = DRAW_TIME + HOLD_TIME + FADE_TIME;
 
-const DEMO_SIZE = 160; // 示范画布的大小（像素）
+export const DEMO_SIZE = 160; // 示范画布的大小（像素）
 
 // 书的图案（原创：紫色封面、金色边框、星星）
 const BOOK_SVG = `
@@ -408,7 +408,7 @@ function restartAnimation(element, className) {
 }
 
 // 把 0 到 1 的比例座标换成画布上的像素，并算好每一段的累积长度
-function toPixels(path, size) {
+export function toPixels(path, size) {
   const pad = 14;
   const inner = size - pad * 2;
   const points = path.map(([x, y]) => ({ x: pad + x * inner, y: pad + y * inner }));
@@ -423,7 +423,7 @@ function toPixels(path, size) {
 }
 
 // 画一格示范动画。time = 这一轮已经播了几秒
-function drawDemo(ctx, path, color, time) {
+export function drawDemo(ctx, path, color, time) {
   ctx.clearRect(0, 0, DEMO_SIZE, DEMO_SIZE);
 
   // 淡淡的完整形状（让玩家先看到全貌）

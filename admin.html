@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Template Review</title>
+  <!-- 审核页：只有管理员登入后才能用（安全靠数据库规则，不是靠藏起这一页） -->
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>🔍 模板审核<span class="en">Template Review</span></h1>
+    </div>
+    <div id="who"></div>
+  </header>
+
+  <!-- 登入（还没登入时显示） -->
+  <section id="login" hidden>
+    <form id="loginForm" class="card">
+      <h2>🔐 管理员登入<span class="en">Admin sign-in</span></h2>
+      <label>电子邮件 <span class="en-inline">Email</span>
+        <input type="email" id="email" autocomplete="username" required>
+      </label>
+      <label>密码 <span class="en-inline">Password</span>
+        <input type="password" id="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit" class="primary">登入 <span class="en-inline">Sign in</span></button>
+      <p id="loginMsg" class="msg"></p>
+    </form>
+  </section>
+
+  <!-- 审核区（登入后显示） -->
+  <main id="app" hidden>
+    <section class="card">
+      <h2>📊 统计<span class="en">Overview</span></h2>
+      <div id="stats"></div>
+    </section>
+
+    <section class="bar">
+      <div id="filters" class="seg"></div>
+      <div class="bar-right">
+        <span id="selCount"></span>
+        <button id="approveSel" class="ok" disabled>✅ 通过所选 <span class="en-inline">Approve selected</span></button>
+        <button id="rejectSel" class="no" disabled>❌ 拒绝所选 <span class="en-inline">Reject selected</span></button>
+        <button id="refresh">🔄 重新整理 <span class="en-inline">Refresh</span></button>
+        <button id="export">⬇️ 导出已通过 <span class="en-inline">Export approved</span></button>
+      </div>
+    </section>
+
+    <p id="appMsg" class="msg"></p>
+    <div id="groups"></div>
+  </main>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>

@@ -5,6 +5,8 @@
 //   spellStateMachine.js → 施法规则（状态机）
 //   recognizer.js        → $1 识别器（双向比对）
 //   templateStore.js     → 读取 / 储存 templates.json
+//   cloudTemplates.js    → ☁️ 从 Supabase 读取大家贡献、你审核通过的模板
+//   contribute.js        → 🤝 贡献模式：一步一步教玩家录制、上传模板
 //   shapeAnalyzer.js     → 算出一笔画的外框（中心点、大小）
 //   effects.js           → 特效引擎
 //   spellBook.js         → 左下角的咒语书
@@ -23,9 +25,12 @@ import { isPointingPose } from "./handPose.js";
 import { SpellStateMachine, State } from "./spellStateMachine.js";
 import { prepareTemplate, recognize } from "./recognizer.js";
 import { loadTemplatesFromFile, saveTemplatesToFile } from "./templateStore.js";
+import { fetchApprovedTemplates } from "./cloudTemplates.js";
 import { getBounds } from "./shapeAnalyzer.js";
 import { EffectManager } from "./effects.js";
 import { createSpellBook } from "./spellBook.js";
+import { createContributeMode } from "./contribute.js";
+import { SPELLS } from "./spells.js";
 
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
@@ -84,21 +89,32 @@ window.testSpell = (shape = "triangle", size = 250) => {
   ]);
 };
 
-// ===== 🪄 咒语表 =====
-const SPELLS = {
-  triangle: { shape: "△ 三角形", shapeEn: "Triangle", spell: "🔥 火焰弹", spellEn: "Fireball" },
-  circle: { shape: "○ 圆形", shapeEn: "Circle", spell: "⭕ 光圈", spellEn: "Light Ring" },
-  lightning: { shape: "⚡ 闪电", shapeEn: "Lightning", spell: "⚡ 闪电", spellEn: "Lightning" },
-  star: { shape: "★ 五角星", shapeEn: "Star", spell: "🌟 星光冲击", spellEn: "Star Rush" },
-  spiral: { shape: "🌀 螺旋", shapeEn: "Spiral", spell: "🌪️ 龙卷风", spellEn: "Tornado" },
-  wave: { shape: "~ 波浪", shapeEn: "Wave", spell: "🐉 水龙", spellEn: "Water Dragon" },
-  mshape: { shape: "M 字", shapeEn: "M Shape", spell: "⛰️ 落石", spellEn: "Rockfall" },
-  infinity: { shape: "∞ 无限", shapeEn: "Infinity", spell: "❄️ 冰冻", spellEn: "Freeze" },
-  loop: { shape: "ℓ 小圈尾巴", shapeEn: "Loop", spell: "🦋 蝴蝶", spellEn: "Butterflies" },
-};
+// ===== 🪄 咒语表：放在 spells.js（游戏和审核页共用同一份）=====
 
 // 📖 咒语书：左下角，点开可以看每个咒语怎么画（和咒语表用同一份资料）
 const spellBook = createSpellBook(document.getElementById("stage"), SPELLS);
+
+// 🤝 贡献模式：右下角，一步一步教玩家录制模板、上传到 Supabase
+const contribute = createContributeMode({
+  container: document.getElementById("stage"),
+  spells: SPELLS,
+  // 画完一笔后，告诉玩家“系统认为这是什么”
+  recognize: (stroke) => (normalizedTemplates.length ? recognize(stroke, normalizedTemplates) : null),
+  onEnter: () => {
+    recordingShape = null; // 关掉开发者的录制模式，两个不要混在一起
+    updateToolbar();
+    machine.reset();
+    hideBanner();
+  },
+  onExit: () => {
+    machine.reset();
+    hideBanner();
+  },
+  onStartDrawing: () => {
+    machine.reset();
+    hideBanner();
+  },
+});
 
 // 🌐 上方的状态提示：第一行中文，第二行英文（小字、灰色）
 //    用 createElement 而不是 innerHTML：文字只会被当成文字，不会被当成 HTML 执行
@@ -114,17 +130,31 @@ function setStatus(zh, en) {
 }
 
 // ===== 📝 模板 =====
-// templates.json 是唯一的数据来源：开网页时读取，按 💾 储存时写回去
-let templates = []; // 原始轨迹（存档用）
-let normalizedTemplates = []; // 公平化之后（比对用，含正反两个方向）
+// 模板有两个来源，识别时两边一起用：
+//   ① templates.json：你自己录的（开网页时读取，按 💾 储存时写回去）
+//   ② ☁️ 共享模板：大家贡献、你审核通过的（只读，不会被存进 templates.json）
+let templates = []; // ① 你自己录的原始轨迹（存档用）
+let cloudTemplates = []; // ② 共享模板
+let normalizedTemplates = []; // ① + ② 公平化之后（比对用，含正反两个方向）
 let recordingShape = null; // 正在录制哪个形状；null = 没在录制
 let pendingStroke = null; // 🆕 刚录好、等你决定“保留还是丢掉”的那一笔
 let unsavedChanges = 0; // 🆕 有几个变更还没储存到 templates.json
 
+// 重新整理“比对用”的模板 = 自己的 + 共享的
+function rebuildNormalized() {
+  normalizedTemplates = [...templates, ...cloudTemplates].map(prepareTemplate);
+  updateToolbar();
+}
+
 function setTemplates(list) {
   templates = list;
-  normalizedTemplates = list.map(prepareTemplate);
-  updateToolbar();
+  rebuildNormalized();
+}
+
+// ☁️ 共享模板下载好了：只收咒语表里有的形状（以防万一）
+function setCloudTemplates(list) {
+  cloudTemplates = list.filter((t) => SPELLS[t.name] && Array.isArray(t.points) && t.points.length >= 10);
+  rebuildNormalized();
 }
 
 function addTemplate(shape, stroke) {
@@ -145,6 +175,12 @@ function countTemplates(shape) {
 
 // 🧠 每画完一笔，状态机就会叫这个函数
 function recognizeStroke(stroke) {
+  // 🤝 贡献模式：不施法，把这一笔交给贡献模式去检查、上传
+  if (contribute.active) {
+    contribute.handleStroke(stroke);
+    return { recorded: true, silent: true, confidence: 1 };
+  }
+
   // 🆕 录制模式：先不存，交给你检查
   if (recordingShape) {
     pendingStroke = { shape: recordingShape, points: [...stroke] };
@@ -291,7 +327,12 @@ const machine = new SpellStateMachine({
   onTransition: (from, to, info) => {
     console.log(`🚦 ${from} → ${to}`, info ?? "");
 
-    if (to === State.CAST && info.recorded) {
+    if (to === State.CAST && info.silent) {
+      // 🤝 贡献模式：不显示大字，右边的面板会接手
+    } else if (to === State.FIZZLE && contribute.active) {
+      // 🤝 贡献模式：不是“施法失败”，只是这一笔没画完，不冒烟
+      showBanner(`⚠️ 这一笔没有完成，再画一次<br><small>Stroke not finished — try again<br>${info.reason}</small>`, "fizzle");
+    } else if (to === State.CAST && info.recorded) {
       showBanner(info.name, "record");
     } else if (to === State.CAST) {
       showBanner(`✨ ${info.name}`, "cast");
@@ -463,6 +504,18 @@ function processFrame(result, now) {
   }
   latestTip = tip; // 🆕 给特效用（没看到手时是 null，光圈就停在原地）
 
+  // 🤝 贡献模式：除了第 ④ 步（画画），状态机都先暂停
+  if (contribute.active) {
+    contribute.onFrame({ now, pointing });
+    if (!contribute.wantsDrawing) {
+      if (hand) drawHandPoints(hand);
+      if (contribute.pendingPoints) drawStroke(contribute.pendingPoints, 1); // 刚画的那一笔留在画面上
+      if (tip) drawWandTip(tip, pointing);
+      setStatus(...contribute.status);
+      return;
+    }
+  }
+
   // 🆕 正在等你决定“保留还是丢掉”：暂停状态机，画面保留那一笔
   if (pendingStroke) {
     if (hand) drawHandPoints(hand);
@@ -480,7 +533,9 @@ function processFrame(result, now) {
   switch (machine.state) {
     case State.IDLE:
       if (tip) drawWandTip(tip, pointing);
-      if (recordingShape) {
+      if (contribute.active) {
+        setStatus(...contribute.status);
+      } else if (recordingShape) {
         setStatus(
           `📝 录制模式：画一个 ${SPELLS[recordingShape].shape}（只伸食指开始）`,
           `Recording: draw a ${SPELLS[recordingShape].shapeEn} (raise only your index finger to start)`
@@ -529,7 +584,7 @@ function updateStats(result, now) {
     const fps = (statFrames * 1000) / elapsed;
     const detectRate = (statHandFrames / statFrames) * 100;
     debugEl.textContent =
-      `📊 摄像头 Camera FPS: ${fps.toFixed(0)}  ｜  识别率 Detection: ${detectRate.toFixed(0)}%  ｜  状态 State: ${machine.state}`;
+      `📊 摄像头 Camera FPS: ${fps.toFixed(0)}  ｜  识别率 Detection: ${detectRate.toFixed(0)}%  ｜  状态 State: ${machine.state}  ｜  ☁️ 共享模板 Shared: ${cloudTemplates.length}`;
 
     statFrames = 0;
     statHandFrames = 0;
@@ -574,6 +629,13 @@ async function main() {
     setStatus("正在读取 templates.json…", "Loading templates…");
     setTemplates(await loadTemplatesFromFile());
     console.log(`📂 读取了 ${templates.length} 个模板`);
+
+    // ☁️ 共享模板：在背景下载，不用等它（下载好之前，先只用 templates.json）
+    fetchApprovedTemplates().then((list) => {
+      if (list === null) return; // 连不上：安静地跳过
+      setCloudTemplates(list);
+      console.log(`☁️ 读取了 ${cloudTemplates.length} 个共享模板`);
+    });
 
     setStatus("正在开启摄像头…", "Starting camera…");
     await startCamera();
